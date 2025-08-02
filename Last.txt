@@ -1,0 +1,99 @@
+import { useEffect, useState } from 'react'
+import './App.css'
+
+function App() {
+  const [quiz, setQuiz] = useState([])
+  const [index, setIndex] = useState(0)
+  const [options, setOptions] = useState([])
+  const [selected, setSelected] = useState("")
+  const [score, setScore] = useState(0)
+
+  useEffect(() => {
+    fetch('https://the-trivia-api.com/v2/questions')
+      .then(res => res.json())
+      .then(data => {
+        setQuiz(data)
+        if (data.length > 0) {
+          prepareOptions(data[0])
+        }
+      })
+      .catch(err => console.log("Error loading quiz", err))
+  }, [])
+
+  useEffect(() => {
+    if (quiz.length > 0 && index < quiz.length) {
+      prepareOptions(quiz[index])
+      setSelected("")
+    }
+  }, [index])
+
+  function prepareOptions(question) {
+    if (!question) return
+    let answers = [...question.incorrectAnswers, question.correctAnswer]
+    answers.sort(() => Math.random() - 0.5)
+    setOptions(answers)
+  }
+
+  function handleNext() {
+    if (selected === quiz[index].correctAnswer) {
+      setScore(prev => prev + 1)
+    }
+    setIndex(prev => prev + 1)
+  }
+
+  if (!quiz.length) {
+    return (
+      <div className="loading">
+        <img
+          src="https://assets-v2.lottiefiles.com/a/91cc0ece-1150-11ee-b7cb-d3afb5c0c001/QNF78Uk4YE.gif"
+          alt="Loading..."
+        />
+        <h2>Loading Quiz...</h2>
+      </div>
+    )
+  }
+
+  if (index >= quiz.length) {
+    return (
+      <div className="container">
+        <h1>Quiz Ended</h1>
+        <h2>Your Score: {score} / {quiz.length}</h2>
+        <button onClick={() => {
+          setIndex(0)
+          setScore(0)
+        }}>Restart</button>
+      </div>
+    )
+  }
+
+  const currentQuestion = quiz[index]
+
+  return (
+    <div className="container">
+      <h2>Quiz App using React</h2>
+
+      <h3>{currentQuestion?.question?.text || "No question found"}</h3>
+
+      {
+        options.map((opt, i) => (
+          <div key={i} className="option">
+            <label className="option-label">
+              <input
+                type="radio"
+                name="option"
+                value={opt}
+                checked={selected === opt}
+                onChange={() => setSelected(opt)}
+              />
+              <span>{opt}</span>
+            </label>
+          </div>
+        ))
+      }
+
+      <button onClick={handleNext} disabled={!selected}>Next</button>
+    </div>
+  )
+}
+
+export default App
